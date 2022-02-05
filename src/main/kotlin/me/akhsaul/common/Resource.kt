@@ -76,10 +76,10 @@ class Resource<T : Any>(private val clazz: Class<T>) {
                 LOG.trace("FilePath = $filePath")
                 Data(path).walk().forEach {
                     if(it.isFile) {
-                        if (it.path.endsWith(filePath)) {
-                            addNonDuplicate(it.path.toUri().toURL())
+                        if (it.toPath().endsWith(filePath)) {
+                            addNonDuplicate(it.toPath().toUri().toURL())
                         } else {
-                            LOG.trace("WalkPath=${it.path}")
+                            LOG.trace("WalkPath=${it.toPath()}")
                         }
                     }
                 }

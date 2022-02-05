@@ -1,9 +1,8 @@
 package me.akhsaul.common.tools
 
-import me.akhsaul.common.logger
+import me.akhsaul.common.*
+import me.akhsaul.common.enums.LogLevel
 import me.akhsaul.common.math.DataSize
-import me.akhsaul.common.notNull
-import me.akhsaul.common.withLock
 import java.io.File
 import java.nio.file.LinkOption
 import java.nio.file.Path
@@ -24,7 +23,7 @@ class Attribute @JvmOverloads constructor(
 ) {
     @JvmOverloads
     constructor(data: Data, followLink: Boolean = false)
-            : this(data.path, followLink)
+            : this(data.toPath(), followLink)
 
     @JvmOverloads
     constructor(file: File, followLink: Boolean = false)
@@ -82,36 +81,40 @@ class Attribute @JvmOverloads constructor(
         get() = get<Any>("*") != null
 
     val isReadOnly
-        get() = get("dos:readonly") ?: false
+        get() = dos("readonly")
 
     val isHidden
-        get() = get("dos:hidden") ?: false
+        get() = dos("hidden")
 
     val isSystem
-        get() = get("dos:system") ?: false
+        get() = dos("system")
 
     val isArchive
-        get() = get("dos:archive") ?: false
+        get() = dos("archive")
 
     @Suppress("unchecked_cast")
     private fun <T : Any> get(attr: String): T? {
-        return runCatching {
+        return catchAndLog(
+            null, LogLevel.WARN,
+            "Exception ignored, when get {}, attr: '{}'.",
+            this, attr
+        ) {
             val result = if (followLink) {
                 provider.readAttributes(path, attr)
             } else {
                 provider.readAttributes(path, attr, LinkOption.NOFOLLOW_LINKS)
             }
-
             val key = attr.substring(attr.indexOf(":") + 1, attr.length)
             if (key == "*") {
                 result as T
             } else {
                 result[key] as T
             }
-        }.getOrElse {
-            LOG.warn("Exception ignored, when get attribute of $path, name: '$attr'.", it)
-            null
         }
+    }
+
+    private fun dos(attr: String): Boolean {
+        return get("dos:$attr") ?: false
     }
 
     private fun <T : Any> basic(default: T, attr: String): T {

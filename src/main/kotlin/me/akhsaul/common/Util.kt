@@ -6,7 +6,7 @@ package me.akhsaul.common
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import me.akhsaul.common.enum.LogLevel
+import me.akhsaul.common.enums.LogLevel
 import me.akhsaul.common.exception.EmptyException
 import me.akhsaul.common.exception.IOAccessException
 import me.akhsaul.common.exception.NotExistsException
@@ -22,7 +22,6 @@ import org.apache.logging.log4j.core.LoggerContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.*
-import java.lang.StringBuilder
 import java.net.URL
 import java.nio.ByteBuffer
 import java.nio.file.AccessMode
@@ -81,16 +80,96 @@ fun logger(func: () -> Unit): Logger {
     return LoggerFactory.getLogger(func.javaClass.name.substringBefore('$'))
 }
 
-fun <T> ignore(func: () -> T): T? {
+/**
+ * ignore [Throwable] without send to [Logger]
+ * @param T generic type of the returned [action]
+ * @param action an action to do something
+ * @return null or [T]
+ * */
+fun <T> ignore(action: () -> T): T? {
     return try {
-        func()
-    } catch (t: Throwable) {
-        LOG.trace("Some exception are ignored.", t)
+        action()
+    } catch (_: Throwable) {
         null
     }
 }
 
-fun <R, T : R> catch(default: R, func: () -> T): R = ignore(func) ?: default
+/**
+ * ignore [Throwable] and send with default message into [Logger] with level is [LogLevel.TRACE]
+ * @param T generic type of the returned [action]
+ * @param action an action to do something
+ * @return null or [T]
+ * */
+fun <T> ignoreAndLog(action: () -> T): T? {
+    return ignoreAndLog(LogLevel.TRACE, "Some exception are ignored.", action = action)
+}
+
+/**
+ * ignore [Throwable] and send to [Logger] with specified [level]
+ * @param T generic type of the returned [action]
+ * @param action an action to do something
+ * @param level [Logger] level
+ * @param format message or format message
+ * @param args argument for format message, can be null or empty
+ * @return null or [T]
+ * */
+@JvmOverloads
+fun <T> ignoreAndLog(
+    level: LogLevel,
+    format: String,
+    vararg args: Any? = emptyArray(),
+    action: () -> T
+): T? {
+    return try {
+        action()
+    } catch (t: Throwable) {
+        when (level) {
+            LogLevel.TRACE -> LOG.trace(format, *args, Exception())
+            LogLevel.ERROR -> LOG.error(format, *args, Exception())
+            LogLevel.DEBUG -> LOG.debug(format, *args, Exception())
+            LogLevel.WARN -> LOG.warn(format, *args, Exception())
+            LogLevel.INFO -> LOG.info(format, *args, Exception())
+            else -> LOG.trace(format, *args, Exception())
+        }
+        null
+    }
+}
+
+/**
+ * catch [Throwable] without send to [Logger]
+ * @param T generic type of the returned [action]
+ * @param default default value if [Throwable] happened
+ * @param action an action to do something
+ * @return [T] or [default]
+ * */
+fun <R, T : R> catch(default: R, action: () -> T): R = ignore(action) ?: default
+
+/**
+ * catch [Throwable] and send with default message into [Logger] with level is [LogLevel.TRACE],
+ * then return [action] or [default]
+ * @param T generic type of the returned [action]
+ * @param default default value if [Throwable] happened
+ * @param action an action to do something
+ * @return [T] or [default]
+ * */
+fun <R, T : R> catchAndLog(default: R, action: () -> T): R = ignoreAndLog(action) ?: default
+
+/**
+ * catch [Throwable] and send to [Logger] with specified [level], then return [action] or [default]
+ * @param T generic type of the returned [action]
+ * @param default default value if [Throwable] happened
+ * @param action an action to do something
+ * @param level [Logger] level
+ * @param format message or format message
+ * @param args argument for format message, can be null or empty
+ * @return [T] or [default]
+ * */
+@JvmOverloads
+fun <R, T : R> catchAndLog(
+    default: R,
+    level: LogLevel, format: String, vararg args: Any? = emptyArray(),
+    action: () -> T
+): R = ignoreAndLog(level, format, *args, action = action) ?: default
 
 fun setLogLevel(level: LogLevel) {
     val ctx: LoggerContext = LogManager.getContext(false) as LoggerContext
@@ -98,9 +177,16 @@ fun setLogLevel(level: LogLevel) {
     ctx.updateLoggers()
 }
 
-fun <T> throws(exception: (cause: Throwable) -> Throwable, func: () -> T): T {
+/**
+ * encapsulate [Throwable] with [exception] then throw it
+ * @param T generic type of the returned [action]
+ * @param exception a [Throwable] to encapsulate other [Throwable] (cause)
+ * @param action an action to do something
+ * @return [T]
+ * */
+fun <T> throws(exception: (cause: Throwable) -> Throwable, action: () -> T): T {
     return try {
-        func()
+        action()
     } catch (t: Throwable) {
         throw exception(t)
     }

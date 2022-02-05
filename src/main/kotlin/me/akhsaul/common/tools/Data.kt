@@ -9,10 +9,11 @@ import java.nio.file.*
 import java.nio.file.spi.FileSystemProvider
 import kotlin.io.NoSuchFileException
 
-class Data constructor(val path: Path) {
-    constructor(file: File) : this(FileSystems.getDefault().getPath(file.path))
+class Data constructor(private val path: Path) {
+    constructor(file: File) : this(fs.getPath(file.path))
 
     companion object {
+        private val fs = FileSystems.getDefault()
         private val LOG = logger { }
         private val trashPath = Path.of("\$RECYCLE.BIN")
     }
@@ -46,6 +47,33 @@ class Data constructor(val path: Path) {
 
     val isExist: Boolean
         get() = getAttribute().isExist
+
+    val isHidden: Boolean
+        get() = getAttribute().isHidden
+
+    fun toRealPath(vararg options: LinkOption): Path {
+        return path.toRealPath(*options)
+    }
+
+    fun toPath(): Path {
+        return path
+    }
+
+    fun toAbsolutePath(): Path{
+        return path.toAbsolutePath()
+    }
+
+    fun toFile(): File {
+        return path.toFile()
+    }
+
+    fun createFile() {
+
+    }
+
+    fun createDir() {
+        Files.createDirectories(path)
+    }
 
     @JvmOverloads
     fun size(recursive: Boolean = false): Long {
@@ -216,7 +244,7 @@ class Data constructor(val path: Path) {
         val result = mutableSetOf<Data>()
         walk().forEach {
             extensions.forEach { ext ->
-                if(it.path.toString().endsWith(ext)){
+                if (it.path.toString().endsWith(ext)) {
                     result.add(it)
                 }
             }
