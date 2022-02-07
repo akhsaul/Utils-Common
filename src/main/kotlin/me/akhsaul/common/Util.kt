@@ -67,18 +67,14 @@ const val EOF = -1
 val mutex = Mutex()
 
 @JvmOverloads
-fun <T> withLock(owner: Any? = null, action: () -> T): T {
-    return runBlocking {
-        mutex.withLock(owner, action)
-    }
+fun <T> withLock(owner: Any? = null, action: () -> T): T = runBlocking {
+    mutex.withLock(owner, action)
 }
 
 /**
  * call this function in "companion object" or static variable
  * */
-fun logger(func: () -> Unit): Logger {
-    return LoggerFactory.getLogger(func.javaClass.name.substringBefore('$'))
-}
+fun logger(func: () -> Unit): Logger = LoggerFactory.getLogger(func.javaClass.name.substringBefore('$'))
 
 /**
  * ignore [Throwable] without send to [Logger]
@@ -86,12 +82,10 @@ fun logger(func: () -> Unit): Logger {
  * @param action an action to do something
  * @return null or [T]
  * */
-fun <T> ignore(action: () -> T): T? {
-    return try {
-        action()
-    } catch (_: Throwable) {
-        null
-    }
+fun <T> ignore(action: () -> T): T? = try {
+    action()
+} catch (_: Throwable) {
+    null
 }
 
 /**
@@ -100,9 +94,9 @@ fun <T> ignore(action: () -> T): T? {
  * @param action an action to do something
  * @return null or [T]
  * */
-fun <T> ignoreAndLog(action: () -> T): T? {
-    return ignoreAndLog(LogLevel.TRACE, "Some exception are ignored.", action = action)
-}
+fun <T> ignoreAndLog(
+    action: () -> T
+): T? = ignoreAndLog(LogLevel.TRACE, "Some exception are ignored.", action = action)
 
 /**
  * ignore [Throwable] and send to [Logger] with specified [level]
@@ -119,20 +113,18 @@ fun <T> ignoreAndLog(
     format: String,
     vararg args: Any? = emptyArray(),
     action: () -> T
-): T? {
-    return try {
-        action()
-    } catch (t: Throwable) {
-        when (level) {
-            LogLevel.TRACE -> LOG.trace(format, *args, Exception())
-            LogLevel.ERROR -> LOG.error(format, *args, Exception())
-            LogLevel.DEBUG -> LOG.debug(format, *args, Exception())
-            LogLevel.WARN -> LOG.warn(format, *args, Exception())
-            LogLevel.INFO -> LOG.info(format, *args, Exception())
-            else -> LOG.trace(format, *args, Exception())
-        }
-        null
+): T? = try {
+    action()
+} catch (t: Throwable) {
+    when (level) {
+        LogLevel.TRACE -> LOG.trace(format, *args, Exception())
+        LogLevel.ERROR -> LOG.error(format, *args, Exception())
+        LogLevel.DEBUG -> LOG.debug(format, *args, Exception())
+        LogLevel.WARN -> LOG.warn(format, *args, Exception())
+        LogLevel.INFO -> LOG.info(format, *args, Exception())
+        else -> LOG.trace(format, *args, Exception())
     }
+    null
 }
 
 /**
@@ -167,7 +159,9 @@ fun <R, T : R> catchAndLog(default: R, action: () -> T): R = ignoreAndLog(action
 @JvmOverloads
 fun <R, T : R> catchAndLog(
     default: R,
-    level: LogLevel, format: String, vararg args: Any? = emptyArray(),
+    level: LogLevel,
+    format: String,
+    vararg args: Any? = emptyArray(),
     action: () -> T
 ): R = ignoreAndLog(level, format, *args, action = action) ?: default
 
@@ -184,12 +178,10 @@ fun setLogLevel(level: LogLevel) {
  * @param action an action to do something
  * @return [T]
  * */
-fun <T> throws(exception: (cause: Throwable) -> Throwable, action: () -> T): T {
-    return try {
-        action()
-    } catch (t: Throwable) {
-        throw exception(t)
-    }
+fun <T> throws(exception: (cause: Throwable) -> Throwable, action: () -> T): T = try {
+    action()
+} catch (t: Throwable) {
+    throw exception(t)
 }
 
 /**
@@ -205,24 +197,18 @@ inline fun <T : Any> notNull(
  * Throws an [RequirementNotMeetException] if the [value] is false.
  * */
 @JvmOverloads
-fun require(
-    value: Boolean,
-    exception: () -> Exception = { RequirementNotMeetException("TRUE", "FALSE") }
-) = if (!value) throw exception() else Unit
+fun require(value: Boolean, exception: () -> Exception = { RequirementNotMeetException("TRUE", "FALSE") }) =
+    if (!value) throw exception() else Unit
 
 /**
  * Throws an [RequirementNotMeetException] if the [value] is negative.
  * */
-fun requireNonNegative(value: Int) = require(value >= 0) {
-    RequirementNotMeetException("NON-NEGATIVE", value)
-}
+fun requireNonNegative(value: Int) = require(value >= 0) { RequirementNotMeetException("NON-NEGATIVE", value) }
 
 /**
  * Throws an [RequirementNotMeetException] if the [value] is negative.
  * */
-fun requireNonNegative(value: Long) = require(value >= 0) {
-    RequirementNotMeetException("NON-NEGATIVE", value)
-}
+fun requireNonNegative(value: Long) = require(value >= 0) { RequirementNotMeetException("NON-NEGATIVE", value) }
 
 fun <T : Any> MutableList<T>.addNonDuplicate(element: T) = apply {
     if (!contains(element)) {
@@ -284,8 +270,7 @@ fun File.requireIO(): File = apply {
     needWrite()
 }
 
-val Path.isDirectory
-    get() = Files.isDirectory(this)
+val Path.isDirectory get() = Files.isDirectory(this)
 
 /**
  * Throws an [RequirementNotMeetException] if the [Path] does not exist, or this is a file.
@@ -301,8 +286,7 @@ fun File.shouldDir(): Unit = require(requireExist().isDirectory) {
     RequirementNotMeetException(this, "Directory", "File")
 }
 
-val Path.isFile
-    get() = Files.isRegularFile(this)
+val Path.isFile get() = Files.isRegularFile(this)
 
 /**
  * Throws an [RequirementNotMeetException] if the [Path] does not exist, or this is a directory.
@@ -325,18 +309,14 @@ fun Path.canRead() = Files.isReadable(this)
  * */
 fun Path.needRead() = require(
     throws({ cause -> IOAccessException(this, AccessMode.READ, cause) }, { canRead() })
-) {
-    IOAccessException(this, AccessMode.READ)
-}
+) { IOAccessException(this, AccessMode.READ) }
 
 /**
  * Throws an [IOAccessException] if the [File] does not support read.
  * */
 fun File.needRead() = require(
     throws({ cause -> IOAccessException(this, AccessMode.READ, cause) }, { canRead() })
-) {
-    IOAccessException(this, AccessMode.READ)
-}
+) { IOAccessException(this, AccessMode.READ) }
 
 fun Path.canWrite() = Files.isWritable(this)
 
@@ -345,18 +325,14 @@ fun Path.canWrite() = Files.isWritable(this)
  * */
 fun Path.needWrite() = require(
     throws({ cause -> IOAccessException(this, AccessMode.WRITE, cause) }, { canWrite() })
-) {
-    IOAccessException(this, AccessMode.WRITE)
-}
+) { IOAccessException(this, AccessMode.WRITE) }
 
 /**
  * Throws an [IOAccessException] if the [File] does not support write.
  * */
 fun File.needWrite() = require(
     throws({ cause -> IOAccessException(this, AccessMode.WRITE, cause) }, { canWrite() })
-) {
-    IOAccessException(this, AccessMode.WRITE)
-}
+) { IOAccessException(this, AccessMode.WRITE) }
 
 /**
  * @return [size] - human readable
@@ -370,13 +346,9 @@ val File.size: String
 val Path.size: String
     get() = DataSize(Files.size(this)).toString()
 
-fun <T : Any> KClass<T>.instanceOf(other: KClass<*>): Boolean {
-    return this.java.instanceOf(other.java)
-}
+fun <T : Any> KClass<T>.instanceOf(other: KClass<*>): Boolean = this.java.instanceOf(other.java)
 
-fun <T : Any> Class<T>.instanceOf(other: KClass<*>): Boolean {
-    return this.instanceOf(other.java)
-}
+fun <T : Any> Class<T>.instanceOf(other: KClass<*>): Boolean = this.instanceOf(other.java)
 
 /**
  * this function has same behaviour like `is` in kotlin or `instanceof` in java
@@ -429,9 +401,7 @@ fun <T : Any> Class<T>.instanceOf(other: Class<*>): Boolean {
  * @param bufSize the buffer size to use.
  */
 @JvmOverloads
-fun String.buffered(bufSize: Int = DEFAULT_BUFFER_SIZE): BufferedInputStream {
-    return byteInputStream().buffered(bufSize)
-}
+fun String.buffered(bufSize: Int = DEFAULT_BUFFER_SIZE): BufferedInputStream = byteInputStream().buffered(bufSize)
 
 /**
  * check if [Double] is "power of two"
@@ -450,6 +420,47 @@ fun Long.isPowerOfTwo(): Boolean = toDouble().isPowerOfTwo()
  * check if [Int] is "power of two"
  */
 fun Int.isPowerOfTwo(): Boolean = toDouble().isPowerOfTwo()
+
+fun StringBuilder.dot() = apply{
+    append('.')
+}
+
+fun StringBuilder.appendNotNull(src: Any?) = apply{
+    if (src != null){
+        append(src)
+    }
+}
+
+fun StringBuilder.comma() = apply{
+    append(',')
+}
+
+fun StringBuilder.space() = apply{
+    append(' ')
+}
+
+fun StringBuilder.replaceSafely(start: Int, end: Int, value: String) = apply{
+    if (start != -1 && start < end){
+        replace(start, end, value)
+    }
+}
+
+fun CharSequence.indexOfFirst(c: Char): Int? {
+    when (this) {
+        is StringBuilder -> {
+            val index = this.indexOf("$c")
+            return if (index == -1){ null } else{ index }
+        }
+        else -> {
+            for (index in this.indices) {
+                if (c == this[index]) {
+                    return index
+                }
+            }
+        }
+    }
+    return null
+}
 
 /**
  * Enhanced from [String.replace] function.
@@ -481,9 +492,10 @@ fun String.replaceAll(
  * @see replaceRange
  * */
 @JvmOverloads
-fun String.replaceFirst(endIndex: Int, replacement: String = ""): String {
-    return replaceRange(0, endIndex, replacement)
-}
+fun String.replaceFirst(
+    endIndex: Int,
+    replacement: String = ""
+): String = replaceRange(0, endIndex, replacement)
 
 /**
  * replace [String] from [String.lastIndex] until [stopIndex] with [replacement].
@@ -491,9 +503,10 @@ fun String.replaceFirst(endIndex: Int, replacement: String = ""): String {
  * @see replaceRange
  * */
 @JvmOverloads
-fun String.replaceLast(stopIndex: Int, replacement: String = ""): String {
-    return replaceRange(stopIndex, this.length, replacement)
-}
+fun String.replaceLast(
+    stopIndex: Int,
+    replacement: String = ""
+): String = replaceRange(stopIndex, this.length, replacement)
 
 fun String.replaceLast(oldValue: String, newValue: String): String {
     val index = lastIndexOf(oldValue)
@@ -526,15 +539,11 @@ fun String.takeByRegex(
 fun String.takeByRegex(
     pattern: Pattern,
     contain: String
-): String {
-    return takeByRegex(pattern.toRegex(), contain)
-}
+): String = takeByRegex(pattern.toRegex(), contain)
 
 fun String.takeByRegex(
     pattern: Pattern
-): String {
-    return takeByRegex(pattern.toRegex())
-}
+): String = takeByRegex(pattern.toRegex())
 
 /**
  * Enhanced from "contains" function.
@@ -601,9 +610,7 @@ fun CharSequence.containsOnlyOneOf(
  * */
 fun CharSequence.contains(
     other: CharSequence
-): Boolean {
-    return contains(other, true)
-}
+): Boolean = contains(other, true)
 
 /**
  * @return [HttpUrl]
@@ -611,9 +618,7 @@ fun CharSequence.contains(
  * @see toHttpUrlOrNull
  * @see notNull
  * */
-fun URL.toHttpUrl(): HttpUrl {
-    return notNull(toHttpUrlOrNull())
-}
+fun URL.toHttpUrl(): HttpUrl = notNull(toHttpUrlOrNull())
 
 /**
  * Creates a buffered input stream from [File].
@@ -777,25 +782,14 @@ fun String.byteBuffer(): ByteBuffer {
 
 infix fun Byte.and(mask: Int): Int = toInt() and mask
 
-val Response.Accept: String
-    get() = headers[Headers.ACCEPT] ?: ""
-val Response.AcceptEncoding: String
-    get() = headers[Headers.ACCEPT_ENCODING] ?: ""
-val Response.AcceptRanges: String
-    get() = headers[Headers.ACCEPT_RANGES] ?: ""
-val Response.Cookie: String
-    get() = headers[Headers.COOKIE] ?: ""
-val Response.Connection: String
-    get() = headers[Headers.CONNECTION] ?: ""
-val Response.ContentDisposition: String
-    get() = headers[Headers.CONTENT_DISPOSITION] ?: ""
-val Response.ContentLength: String
-    get() = headers[Headers.CONTENT_LENGTH] ?: ""
-val Response.ContentType: String
-    get() = headers[Headers.CONTENT_TYPE] ?: ""
-val Response.UserAgent: String
-    get() = headers[Headers.USER_AGENT] ?: ""
-val Response.Host: String
-    get() = headers[Headers.HOST] ?: ""
-val Response.Range: String
-    get() = headers[Headers.RANGE] ?: ""
+val Response.Accept: String get() = headers[Headers.ACCEPT] ?: ""
+val Response.AcceptEncoding: String get() = headers[Headers.ACCEPT_ENCODING] ?: ""
+val Response.AcceptRanges: String get() = headers[Headers.ACCEPT_RANGES] ?: ""
+val Response.Cookie: String get() = headers[Headers.COOKIE] ?: ""
+val Response.Connection: String get() = headers[Headers.CONNECTION] ?: ""
+val Response.ContentDisposition: String get() = headers[Headers.CONTENT_DISPOSITION] ?: ""
+val Response.ContentLength: String get() = headers[Headers.CONTENT_LENGTH] ?: ""
+val Response.ContentType: String get() = headers[Headers.CONTENT_TYPE] ?: ""
+val Response.UserAgent: String get() = headers[Headers.USER_AGENT] ?: ""
+val Response.Host: String get() = headers[Headers.HOST] ?: ""
+val Response.Range: String get() = headers[Headers.RANGE] ?: ""
