@@ -1,5 +1,11 @@
 @file:JvmName("Util")
-@file:Suppress("unused", "unused_parameter")
+@file:Suppress(
+    "unused",
+    "unused_parameter",
+    "unchecked_cast",
+    "PLATFORM_CLASS_MAPPED_TO_KOTLIN",
+    "UsePropertyAccessSyntax"
+)
 
 package me.akhsaul.common
 
@@ -12,6 +18,7 @@ import me.akhsaul.common.exception.IOAccessException
 import me.akhsaul.common.exception.NotExistsException
 import me.akhsaul.common.exception.RequirementNotMeetException
 import me.akhsaul.common.math.DataSize
+import me.akhsaul.common.tools.Data
 import me.akhsaul.common.tools.Headers
 import me.akhsaul.common.tools.Sys
 import okhttp3.HttpUrl
@@ -28,7 +35,8 @@ import java.nio.file.AccessMode
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.regex.Pattern
-import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 import kotlin.io.path.Path
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -276,14 +284,14 @@ val Path.isDirectory get() = Files.isDirectory(this)
  * Throws an [RequirementNotMeetException] if the [Path] does not exist, or this is a file.
  * */
 fun Path.shouldDir(): Unit = require(requireExist().isDirectory) {
-    RequirementNotMeetException(this, "Directory", "File")
+    RequirementNotMeetException(this, "Directory", "File", null)
 }
 
 /**
  * Throws an [RequirementNotMeetException] if the [File] does not exist, or this is a file.
  * */
 fun File.shouldDir(): Unit = require(requireExist().isDirectory) {
-    RequirementNotMeetException(this, "Directory", "File")
+    RequirementNotMeetException(this, "Directory", "File", null)
 }
 
 val Path.isFile get() = Files.isRegularFile(this)
@@ -292,14 +300,14 @@ val Path.isFile get() = Files.isRegularFile(this)
  * Throws an [RequirementNotMeetException] if the [Path] does not exist, or this is a directory.
  * */
 fun Path.shouldFile(): Unit = require(requireExist().isFile) {
-    RequirementNotMeetException(this, "File", "Directory")
+    RequirementNotMeetException(this, "File", "Directory", null)
 }
 
 /**
  * Throws an [RequirementNotMeetException] if the [File] does not exist, or this is a directory.
  * */
 fun File.shouldFile(): Unit = require(requireExist().isFile) {
-    RequirementNotMeetException(this, "File", "Directory")
+    RequirementNotMeetException(this, "File", "Directory", null)
 }
 
 fun Path.canRead() = Files.isReadable(this)
@@ -373,10 +381,10 @@ fun <T : Any> Class<T>.instanceOf(other: Class<*>): Boolean {
             return false
         }
     } else {
-        var supers: Class<in T>? = null
         if (this == other) {
             return true
         } else {
+            var supers: Class<in T>? = null
             while (true) {
                 supers = if (supers == null) {
                     this.superclass
@@ -421,45 +429,131 @@ fun Long.isPowerOfTwo(): Boolean = toDouble().isPowerOfTwo()
  */
 fun Int.isPowerOfTwo(): Boolean = toDouble().isPowerOfTwo()
 
-fun StringBuilder.dot() = apply{
+fun StringBuilder.dot() = apply {
     append('.')
 }
 
-fun StringBuilder.appendNotNull(src: Any?) = apply{
-    if (src != null){
-        append(src)
-    }
+inline fun <reified T> StringBuilder.appendClass() = apply {
+    append(T::class.simpleName())
 }
 
-fun StringBuilder.comma() = apply{
-    append(',')
+@JvmOverloads
+fun buildString(capacity: Int = 8, builderAction: StringBuilder.() -> Unit): String {
+    contract { callsInPlace(builderAction, InvocationKind.EXACTLY_ONCE) }
+    return StringBuilder(capacity).apply {
+        builderAction()
+        dot()
+        append(Character.toUpperCase(this[0]))
+    }.toString()
 }
 
-fun StringBuilder.space() = apply{
-    append(' ')
-}
-
-fun StringBuilder.replaceSafely(start: Int, end: Int, value: String) = apply{
-    if (start != -1 && start < end){
-        replace(start, end, value)
-    }
-}
-
-fun CharSequence.indexOfFirst(c: Char): Int? {
-    when (this) {
-        is StringBuilder -> {
-            val index = this.indexOf("$c")
-            return if (index == -1){ null } else{ index }
-        }
-        else -> {
-            for (index in this.indices) {
-                if (c == this[index]) {
-                    return index
-                }
+fun StringBuilder.appendClass(obj: Any?) = apply {
+    if (obj != null) {
+        var path: Any? = null
+        when (obj) {
+            is Path -> {
+                appendClass<Path>()
+                path = obj.toAbsolutePath()
+            }
+            is File -> {
+                appendClass<File>()
+                path = obj.absolutePath
+            }
+            is Data -> {
+                appendClass<Data>()
+                path = obj.toAbsolutePath()
+            }
+            is Array<*> -> {
+                appendClass<Array<*>>()
+            }
+            is List<*> -> {
+                appendClass<List<*>>()
+            }
+            is Set<*> -> {
+                appendClass<Set<*>>()
+            }
+            is Map<*, *> -> {
+                appendClass<Map<*, *>>()
+            }
+            else -> {
+                append(obj.simpleName())
+                append('(')
+                append("hashCode=")
+                append(obj.hashCode())
+                append(')')
             }
         }
+        if (path != null) {
+            space().append("of").space()
+            append(obj.simpleName())
+            append('(')
+            append("path=")
+            append('\'').append(path).append('\'')
+            comma().space()
+            append("hashCode=")
+            append(obj.hashCode())
+            append(')')
+        }
+        space()
     }
-    return null
+}
+
+@Suppress("UPPER_BOUND_VIOLATED")
+fun <T> KClass<T>.simpleName(): String {
+    return (this.java).simpleName
+}
+
+fun Any.simpleName(): String {
+    return this::class.simpleName()
+}
+
+fun StringBuilder.appendNotNull(src: Any?): StringBuilder? = if (src != null) append(src) else null
+
+fun StringBuilder.comma(): java.lang.StringBuilder = append(',')
+
+fun StringBuilder.space(): java.lang.StringBuilder = append(' ')
+
+@JvmOverloads
+fun toCodePoint(c1: Char, c2: Char? = null): Int {
+    return if (Character.isSurrogate(c1)) {
+        Character.toCodePoint(c1, notNull(c2) {
+            IllegalArgumentException("c1 is Surrogate. c2 is needed to combined with c1.")
+        })
+    } else {
+        c1.code
+    }
+}
+
+@JvmOverloads
+fun toUpperCase(c1: Char, c2: Char? = null): CharArray {
+    return Character.toChars(Character.toUpperCase(toCodePoint(c1, c2)))
+}
+
+@JvmOverloads
+fun toLowerCase(c1: Char, c2: Char? = null): CharArray {
+    return Character.toChars(Character.toLowerCase(toCodePoint(c1, c2)))
+}
+
+fun StringBuilder.upperFirst() = apply {
+    ignore {
+        toUpperCase(this[0], this[1]).forEachIndexed { index, c ->
+            this[index] = c
+        }
+    }
+}
+
+fun StringBuilder.lowerFirst() = apply {
+    ignore {
+        toLowerCase(this[0], this[1]).forEachIndexed { index, c ->
+            this[index] = c
+        }
+    }
+}
+
+fun StringBuilder.replaceSafely(start: Int, end: Int, value: String) = apply {
+    if (start < end && start in 0..lastIndex) {
+        replace(start, end, value)
+    }
 }
 
 /**
@@ -690,7 +784,6 @@ fun InputStream.transfer(output: OutputStream, bufSize: Int = DEFAULT_BUFFER_SIZ
  * @return the result of [block] function invoked on this resource.
  * @see use
  */
-@OptIn(ExperimentalContracts::class)
 inline fun <I : InputStream?, O : OutputStream?, R> I.consume(output: O, block: (I, O) -> R): R {
     use { inp ->
         output.use { out ->

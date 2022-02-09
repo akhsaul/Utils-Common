@@ -60,3 +60,15 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-html:$kotlinxHtmlVersion")
      */
 }
+kotlin.sourceSets.all {
+    languageSettings {
+        optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
+        optIn("kotlinx.coroutines.InternalCoroutinesApi")
+        optIn("kotlinx.coroutines.DelicateCoroutinesApi")
+        optIn("kotlin.Experimental")
+        optIn("kotlin.time.ExperimentalTime")
+        optIn("kotlin.ExperimentalStdlibApi")
+        optIn("kotlin.io.path.ExperimentalPathApi")
+        optIn("kotlin.contracts.ExperimentalContracts")
+    }
+}

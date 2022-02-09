@@ -1,4 +1,4 @@
-package me.akhsaul.common.enum
+package me.akhsaul.common.enums
 
 import org.apache.logging.log4j.Level
 

@@ -1,0 +1,13 @@
+https://www.whatismybrowser.com/guides/the-latest-user-agent/chrome
+https://www.whatismybrowser.com/guides/the-latest-user-agent/firefox
+https://www.whatismybrowser.com/guides/the-latest-user-agent/safari
+https://www.whatismybrowser.com/guides/the-latest-user-agent/internet-explorer
+https://www.whatismybrowser.com/guides/the-latest-user-agent/edge
+https://www.whatismybrowser.com/guides/the-latest-user-agent/opera
+https://www.whatismybrowser.com/guides/the-latest-user-agent/vivaldi
+https://www.whatismybrowser.com/guides/the-latest-user-agent/yandex-browser
+https://www.whatismybrowser.com/guides/the-latest-user-agent/chrome-os
+https://www.whatismybrowser.com/guides/the-latest-user-agent/macos
+https://www.whatismybrowser.com/guides/the-latest-user-agent/ios
+https://www.whatismybrowser.com/guides/the-latest-user-agent/windows
+https://www.whatismybrowser.com/guides/the-latest-user-agent/android

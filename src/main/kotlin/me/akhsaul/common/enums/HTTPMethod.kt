@@ -1,4 +1,4 @@
-package me.akhsaul.common.enum
+package me.akhsaul.common.enums
 
 enum class HTTPMethod {
     GET,

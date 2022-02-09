@@ -1,0 +1,24 @@
+{
+  "steps": {
+    "import": {
+      "robot": "/http/import",
+      "url": "LOLANJING"
+    },
+    "hevc_encoded": {
+      "use": [
+        "import"
+      ],
+      "robot": "/video/encode",
+      "ffmpeg_stack": "v4.3.1",
+      "preset": "hevc",
+      "turbo": true
+    },
+    "compress-archive": {
+      "use": "hevc_encoded",
+      "robot": "/file/compress",
+      "format": "tar",
+      "compression_level": -9,
+      "gzip": true
+    }
+  }
+}

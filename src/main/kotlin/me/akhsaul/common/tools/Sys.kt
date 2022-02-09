@@ -5,6 +5,7 @@ import me.akhsaul.common.core.CommandLine
 import me.akhsaul.common.core.HookTask
 import me.akhsaul.common.core.ShutdownOS
 import me.akhsaul.common.exception.ClassLoaderNotFoundException
+import java.awt.GraphicsEnvironment
 import java.io.BufferedInputStream
 import java.util.*
 import kotlin.io.path.Path
@@ -279,6 +280,8 @@ object Sys {
 
         return if (value != "") "$prefix$value" else value
     }
+
+    val isHeadless = GraphicsEnvironment.isHeadless()
 
     @JvmStatic
     fun error(vararg obj: Any) {
